@@ -1,5 +1,10 @@
 // /* eslint-disable no-undef */
 // /* eslint-disable no-unused-vars */
+/**
+ * backend start
+ *  Express is going to be the routes of the website
+ */
+
 require("dotenv").config();
 // console.log(process.env.PRISMIC_ENDPOINT, process.env.PRISMIC_CLIENT_ID);
 const Prismic = require("@prismicio/client");
