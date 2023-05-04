@@ -76,6 +76,33 @@ app.set('view engine', 'pug')
 app.set('views', path.join(__dirname, 'views'))
 app.locals.basedir = app.get('views')
 
+// const handleRequest = async (api) => {
+//     try {
+//         const [meta, preloader, navigation, home, about, collections] =
+//             await Promise.all([
+//                 api.getSingle('meta'),
+//                 api.getSingle('preloader'),
+//                 api.getSingle('navigation'),
+//                 api.getSingle('home'),
+//                 api.getSingle('about'),
+//                 api.query(
+//                     Prismic.Predicates.at('document.type', 'collection'),
+//                     {
+//                         fetchLinks: 'product.image',
+//                     }
+//                 ),
+//             ])
+
+//         console.log(collections) // add this line to print out the query results
+
+//         const assets = []
+
+//         // rest of the code
+//     } catch (error) {
+//         console.error(error)
+//     }
+// }
+
 const handleRequest = async (api) => {
     const [meta, preloader, navigation, home, about, collections] =
         await Promise.all([
