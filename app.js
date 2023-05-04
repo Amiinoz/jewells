@@ -77,14 +77,22 @@ app.set('views', path.join(__dirname, 'views'))
 app.locals.basedir = app.get('views')
 
 const handleRequest = async (api) => {
-    const [meta, home, about, { results: collections }] = await Promise.all([
-        api.getSingle('meta'),
-        api.getSingle('home'),
-        api.getSingle('about'),
-        api.query(Prismic.Predicates.at('document.type', 'collection'), {
-            fetchLinks: 'product.image',
-        }),
-    ])
+    const [meta, preloader, navigation, home, about, collections] =
+        await Promise.all([
+            api.getSingle('meta'),
+            api.getSingle('preloader'),
+            api.getSingle('navigation'),
+            api.getSingle('home'),
+            api.getSingle('about'),
+            Promise.all([
+                api.query(
+                    Prismic.Predicates.at('document.type', 'collection'),
+                    {
+                        fetchLinks: 'product.image',
+                    }
+                ),
+            ]),
+        ])
 
     const assets = []
 
@@ -104,7 +112,7 @@ const handleRequest = async (api) => {
         }
     })
 
-    collections.forEach((collection) => {
+    collections[0].forEach((collection) => {
         collection.data.products.forEach((item) => {
             assets.push(item.products_product.data.image.url)
         })
@@ -113,8 +121,10 @@ const handleRequest = async (api) => {
     return {
         assets,
         meta,
+        preloader,
+        navigation,
         home,
-        collections,
+        collections: collections[0],
         about,
     }
 }
