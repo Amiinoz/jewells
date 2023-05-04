@@ -155,11 +155,12 @@ app.get('/detail/:uid', async (req, res) => {
         fetchLinks: 'collection,title',
     })
 
-    res.render(pages.detail, {
+    res.render('pages/detail', {
         ...defaults,
         product,
     })
     // res.render('pages/detail')
+    console.log(product)
 })
 
 app.listen(port, () => {
