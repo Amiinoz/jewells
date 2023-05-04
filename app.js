@@ -76,85 +76,85 @@ app.set('view engine', 'pug')
 app.set('views', path.join(__dirname, 'views'))
 app.locals.basedir = app.get('views')
 
-// const handleRequest = async (api) => {
-//     try {
-//         const [meta, preloader, navigation, home, about, collections] =
-//             await Promise.all([
-//                 api.getSingle('meta'),
-//                 api.getSingle('preloader'),
-//                 api.getSingle('navigation'),
-//                 api.getSingle('home'),
-//                 api.getSingle('about'),
-//                 api.query(
-//                     Prismic.Predicates.at('document.type', 'collection'),
-//                     {
-//                         fetchLinks: 'product.image',
-//                     }
-//                 ),
-//             ])
-
-//         console.log(collections) // add this line to print out the query results
-
-//         const assets = []
-
-//         // rest of the code
-//     } catch (error) {
-//         console.error(error)
-//     }
-// }
-
 const handleRequest = async (api) => {
-    const [meta, preloader, navigation, home, about, collections] =
-        await Promise.all([
-            api.getSingle('meta'),
-            api.getSingle('preloader'),
-            api.getSingle('navigation'),
-            api.getSingle('home'),
-            api.getSingle('about'),
-            Promise.all([
+    try {
+        const [meta, preloader, navigation, home, about, collections] =
+            await Promise.all([
+                api.getSingle('meta'),
+                api.getSingle('preloader'),
+                api.getSingle('navigation'),
+                api.getSingle('home'),
+                api.getSingle('about'),
                 api.query(
                     Prismic.Predicates.at('document.type', 'collection'),
                     {
                         fetchLinks: 'product.image',
                     }
                 ),
-            ]),
-        ])
+            ])
 
-    const assets = []
+        console.log(collections) // add this line to print out the query results
 
-    home.data.gallery.forEach((item) => {
-        assets.push(item.image.url)
-    })
+        const assets = []
 
-    about.data.gallery.forEach((item) => {
-        assets.push(item.image.url)
-    })
-
-    about.data.body.forEach((section) => {
-        if (section.slice_type === 'gallery') {
-            section.items.forEach((item) => {
-                assets.push(item.image.url)
-            })
-        }
-    })
-
-    collections[0].forEach((collection) => {
-        collection.data.products.forEach((item) => {
-            assets.push(item.products_product.data.image.url)
-        })
-    })
-
-    return {
-        assets,
-        meta,
-        preloader,
-        navigation,
-        home,
-        collections: collections[0],
-        about,
+        // rest of the code
+    } catch (error) {
+        console.error(error)
     }
 }
+
+// const handleRequest = async (api) => {
+//     const [meta, preloader, navigation, home, about, collections] =
+//         await Promise.all([
+//             api.getSingle('meta'),
+//             api.getSingle('preloader'),
+//             api.getSingle('navigation'),
+//             api.getSingle('home'),
+//             api.getSingle('about'),
+//             Promise.all([
+//                 api.query(
+//                     Prismic.Predicates.at('document.type', 'collection'),
+//                     {
+//                         fetchLinks: 'product.image',
+//                     }
+//                 ),
+//             ]),
+//         ])
+
+//     const assets = []
+
+//     home.data.gallery.forEach((item) => {
+//         assets.push(item.image.url)
+//     })
+
+//     about.data.gallery.forEach((item) => {
+//         assets.push(item.image.url)
+//     })
+
+//     about.data.body.forEach((section) => {
+//         if (section.slice_type === 'gallery') {
+//             section.items.forEach((item) => {
+//                 assets.push(item.image.url)
+//             })
+//         }
+//     })
+
+//     collections[0].forEach((collection) => {
+//         collection.data.products.forEach((item) => {
+//             assets.push(item.products_product.data.image.url)
+//         })
+//     })
+
+//     return {
+//         assets,
+//         meta,
+//         preloader,
+//         navigation,
+//         home,
+//         collections: collections[0],
+//         about,
+//     }
+// }
 
 app.get('/', async (req, res) => {
     const api = await initApi(req)
