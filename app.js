@@ -10,6 +10,7 @@ console.log(process.env.PRISMIC_ENDPOINT, process.env.PRISMIC_CLIENT_ID)
 
 // const nodeFetch = require('node-fetch')
 const fetch = require('node-fetch')
+
 const path = require('path')
 const express = require('express')
 const app = express()
@@ -21,15 +22,17 @@ const port = 3000
 const Prismic = require('@prismicio/client')
 const PrismicH = require('@prismicio/helpers')
 
-// Connect to the API
+//  create a Prismic client instance with the provided endpoint and access token.
 const initApi = (req) => {
     return Prismic.createClient(process.env.PRISMIC_ENDPOINT, {
         accessToken: process.env.PRISMIC_ACCESS_TOKEN,
         req: req,
     })
 }
+// ========================================================================
+// *** Function returns the appropriate URL for a given document type
+// ========================================================================
 
-// Add link resolver
 const handleLinkResolver = (doc) => {
     if (doc.type === 'product') {
         return `/detail/${doc.slug}`
@@ -47,7 +50,11 @@ const handleLinkResolver = (doc) => {
     return '/'
 }
 
-//Create a middleware to add the prismic context
+// ========================================================================
+// ***  Middleware adds some variables to the response locals object,
+// *** such as device type and link resolver
+// ========================================================================
+
 app.use((req, res, next) => {
     const ua = UAParser(req.headers['user-agent'])
 
@@ -72,10 +79,18 @@ app.use((req, res, next) => {
     next()
 })
 
+//========================================================================
+// ***  Method sets the view engine to Pug and the views directory
+// *** to the views folder in the current directory.
+//========================================================================
 app.set('view engine', 'pug')
 app.set('views', path.join(__dirname, 'views'))
 app.locals.basedir = app.get('views')
 
+//========================================================================
+// *** Fetches data from the Prismic API using the api instance and
+// *** returns an object with the fetched data.
+//========================================================================
 const handleRequest = async (api) => {
     try {
         const [meta, preloader, navigation, home, about, collections] =
@@ -85,76 +100,53 @@ const handleRequest = async (api) => {
                 api.getSingle('navigation'),
                 api.getSingle('home'),
                 api.getSingle('about'),
-                api.query(
-                    Prismic.Predicates.at('document.type', 'collection'),
-                    {
-                        fetchLinks: 'product.image',
-                    }
-                ),
+                Promise.all([
+                    api.query(
+                        Prismic.Predicates.at('document.type', 'collection'),
+                        {
+                            fetchLinks: 'product.image',
+                        }
+                    ),
+                ]),
             ])
-
-        console.log(collections) // add this line to print out the query results
 
         const assets = []
 
-        // rest of the code
+        home.data.gallery.forEach((item) => {
+            assets.push(item.image.url)
+        })
+
+        about.data.gallery.forEach((item) => {
+            assets.push(item.image.url)
+        })
+
+        about.data.body.forEach((section) => {
+            if (section.slice_type === 'gallery') {
+                section.items.forEach((item) => {
+                    assets.push(item.image.url)
+                })
+            }
+        })
+
+        collections[0].forEach((collection) => {
+            collection.data.products.forEach((item) => {
+                assets.push(item.products_product.data.image.url)
+            })
+        })
+
+        return {
+            assets,
+            meta,
+            preloader,
+            navigation,
+            home,
+            collections: collections[0],
+            about,
+        }
     } catch (error) {
         console.error(error)
     }
 }
-
-// const handleRequest = async (api) => {
-//     const [meta, preloader, navigation, home, about, collections] =
-//         await Promise.all([
-//             api.getSingle('meta'),
-//             api.getSingle('preloader'),
-//             api.getSingle('navigation'),
-//             api.getSingle('home'),
-//             api.getSingle('about'),
-//             Promise.all([
-//                 api.query(
-//                     Prismic.Predicates.at('document.type', 'collection'),
-//                     {
-//                         fetchLinks: 'product.image',
-//                     }
-//                 ),
-//             ]),
-//         ])
-
-//     const assets = []
-
-//     home.data.gallery.forEach((item) => {
-//         assets.push(item.image.url)
-//     })
-
-//     about.data.gallery.forEach((item) => {
-//         assets.push(item.image.url)
-//     })
-
-//     about.data.body.forEach((section) => {
-//         if (section.slice_type === 'gallery') {
-//             section.items.forEach((item) => {
-//                 assets.push(item.image.url)
-//             })
-//         }
-//     })
-
-//     collections[0].forEach((collection) => {
-//         collection.data.products.forEach((item) => {
-//             assets.push(item.products_product.data.image.url)
-//         })
-//     })
-
-//     return {
-//         assets,
-//         meta,
-//         preloader,
-//         navigation,
-//         home,
-//         collections: collections[0],
-//         about,
-//     }
-// }
 
 app.get('/', async (req, res) => {
     const api = await initApi(req)
@@ -184,6 +176,10 @@ app.get('/collections', async (req, res) => {
     })
 })
 
+// ========================================================================================
+// *** This Method is the main route for the website. it define routes for the website
+// *** and renders views using the fetched data.
+// ========================================================================================
 app.get('/detail/:uid', async (req, res) => {
     const api = await initApi(req)
     const defaults = await handleRequest(api)
